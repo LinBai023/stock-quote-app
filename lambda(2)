@@ -1,0 +1,50 @@
+import json
+import boto3
+import csv
+import os
+from botocore.vendored import requests
+
+
+s3 = boto3.client("s3")
+
+def lambda_handler(event, context):
+    # TODO implement
+    #name = event['']['name']
+    #print(name)
+    print(str(event))
+    name = event['name']
+    print(name)
+    bucket = 'wildbuckets-scrapy-finance'
+    key = 'companylist.csv'
+    data = s3.get_object(Bucket = bucket, Key=key)
+    lines = data['Body'].read().splitlines(True)
+    dict = {}
+    time = []
+    open = []
+    close = []
+    volume = []
+    low=[]
+    high=[]
+    for line in lines:
+        list = line.decode().split(',')
+        # print(list)
+        Companyname = (list[1].split(' '))[0]
+        # print(Companyname)
+        if name == Companyname:
+            # print(name)
+            ticker = list[0]
+            r=requests.get('https://www.worldtradingdata.com/api/v1/intraday?symbol='+ticker+'&range=1&interval=1&api_token=T60Z4ACsCic5paufZIpYFJ0xeerAjybegCZrQQTGiktEg20bSQkWs93tJynU')
+            if r.status_code == 200:
+                result = r.json()
+                row = result['intraday']
+                print(row)
+                for k,v in row.items():
+                    dict[k] = [v['open'],v['close'],v['high'],v['low'],v['volume']]
+            return {
+                # "isBase64Encoded": false,
+                'headers': {'Content-Type': 'application/json',"Access-Control-Allow-Origin": '*'},
+                "statusCode": 200,
+                "body":json.dumps(dict)
+            }
+
+
